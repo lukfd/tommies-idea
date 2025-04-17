@@ -10,7 +10,8 @@ import (
 
 func main() {
 	redis := internal.NewRedisClient()
-	redis.Initialize()
+	log.Println("Initializing Redis")
+	redis.Init()
 
 	// Initialize the default ServeMux
 	mux := http.NewServeMux()

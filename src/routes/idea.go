@@ -2,20 +2,34 @@ package routes
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/lukfd/redis-demo/internal"
 )
 
 func Idea(w http.ResponseWriter, r *http.Request, redis *internal.RedisClient) {
 	id := r.PathValue("id")
-	val, err := redis.Client.Get(redis.Ctx, id).Result()
+	key := fmt.Sprintf("idea:%s", id)
+	log.Println("Key: " + key)
+	res, err := redis.Client.HGetAll(redis.Ctx, key).Result()
 	if err != nil {
 		http.Error(w, "Error fetching data from Redis: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Respond with the value from Redis
+	// Convert the map to a string
+	var builder strings.Builder
+	for k, v := range res {
+		builder.WriteString(fmt.Sprintf("%s: %s\n", k, v))
+	}
+
+	// Respond with the formatted string
+	log.Println("Result: " + builder.String())
+	log.Println("Original: " + strconv.Itoa(len(res)))
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("Value from Redis: %s", val)))
+	w.Write([]byte(builder.String()))
 }

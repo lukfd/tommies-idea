@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -36,9 +37,15 @@ func NewRedisClient() *RedisClient {
 	}
 }
 
-func (r *RedisClient) Initialize() {
+func (r *RedisClient) Init() {
 	r.Client.Set(r.Ctx, "foo", "bar", 0)
 	r.Client.Set(r.Ctx, "key", "value", 0)
+
+	// Ideas
+	firstIdeaUid := 1
+	r.Client.Set(r.Ctx, "idea_uid", firstIdeaUid, 0)
+	firstIdeaBody := "The body of my first idea"
+	r.Client.HSet(r.Ctx, fmt.Sprintf("idea:%d", firstIdeaUid), "title", "My First Idea", "body", firstIdeaBody)
 }
 
 // GetClient exposes the Redis client for routes to use
