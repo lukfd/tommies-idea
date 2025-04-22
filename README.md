@@ -1,6 +1,6 @@
-# redis-demo
+# Tommies Idea
 
-Final Project Proposal 
+Final Project Proposal
 
 Luca Comba 
 
