@@ -1,8 +1,7 @@
-package internal
+package model
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -42,10 +41,15 @@ func (r *RedisClient) Init() {
 	r.Client.Set(r.Ctx, "key", "value", 0)
 
 	// Ideas
-	firstIdeaUid := 1
-	r.Client.Set(r.Ctx, "idea_uid", firstIdeaUid, 0)
-	firstIdeaBody := "The body of my first idea"
-	r.Client.HSet(r.Ctx, fmt.Sprintf("idea:%d", firstIdeaUid), "title", "My First Idea", "body", firstIdeaBody)
+	firstIdea := Idea{
+		ID:          1,
+		Title:       "First Idea",
+		Description: "This is my first idea.",
+		Writer:      "Luca",
+		Tags:        []string{"idea", "redis"},
+	}
+	r.Client.Set(r.Ctx, "idea_uid", firstIdea.ID, 0)
+	r.AddIdea(firstIdea)
 }
 
 // GetClient exposes the Redis client for routes to use

@@ -4,12 +4,12 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/lukfd/redis-demo/internal"
+	"github.com/lukfd/redis-demo/model"
 	"github.com/lukfd/redis-demo/routes"
 )
 
 func main() {
-	redis := internal.NewRedisClient()
+	redis := model.NewRedisClient()
 	log.Println("Initializing Redis")
 	redis.Init()
 
@@ -17,12 +17,18 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Define routes
-	mux.HandleFunc("GET /", routes.Index)
+	mux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("static"))))
 	mux.HandleFunc("GET /store/{key}", func(w http.ResponseWriter, r *http.Request) {
 		routes.Keyval(w, r, redis)
 	})
 	mux.HandleFunc("GET /idea/{id}", func(w http.ResponseWriter, r *http.Request) {
-		routes.Idea(w, r, redis)
+		routes.GetIdea(w, r, redis)
+	})
+	mux.HandleFunc("GET /ideas", func(w http.ResponseWriter, r *http.Request) {
+		routes.GetIdeas(w, r, redis)
+	})
+	mux.HandleFunc("POST /idea", func(w http.ResponseWriter, r *http.Request) {
+		routes.NewIdea(w, r, redis)
 	})
 
 	// Start the server

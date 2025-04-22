@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/lukfd/redis-demo/internal"
+	"github.com/lukfd/redis-demo/model"
 )
 
-func Keyval(w http.ResponseWriter, r *http.Request, redis *internal.RedisClient) {
+func Keyval(w http.ResponseWriter, r *http.Request, redis *model.RedisClient) {
 	key := r.PathValue("key")
 	val, err := redis.Client.Get(redis.Ctx, key).Result()
 	if err != nil {
