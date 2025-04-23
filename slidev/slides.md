@@ -1,7 +1,9 @@
 ---
 theme: default
 background: /cover_image.jpg
-title: Redis
+title: Tommies Idea Board
+description: A place for Tommies to share ideas
+author: Luca Comba
 layout: cover
 drawings:
   persist: false
@@ -13,7 +15,7 @@ addons:
 ---
 
 <img src="https://redis.io/wp-content/uploads/2024/04/Logotype.svg" width="50%" />
-
+<br>
 Presented by Luca Comba
 
 <div class="absolute left-30px bottom-30px text-neutral-300/50">
@@ -123,17 +125,21 @@ title: History
     <img src="https://redis.io/wp-content/uploads/2024/04/footlogo.svg" class="w-50"/>
 </div>
 
-<div class="flex flex-row gap-12">
-    <Card class="flex p-12" v-click>
-        <template #title>Redis stores data in <b class="text-green-400">memory</b></template>
+<div class="grid grid-cols-2 gap-4">
+    <Card class="flex flex-col justify-between p-12 h-full" v-click>
+        <template #title>
+            <p class="text-green-400">Redis stores data in <b>memory</b></p>
+        </template>
         <template #content>
             <p class="m-0">
                 which makes it much faster than most DBMSs (which persist data to disk).
             </p>
         </template>
     </Card>
-    <Card class="flex p-12" v-click>
-        <template #title>Redis supports <b class="text-lime-400">writing data to disk</b></template>
+    <Card class="flex flex-col justify-between p-12 h-full" v-click>
+        <template #title>
+            <p class="text-lime-400">Redis supports <b>writing data to disk</b></p>
+        </template>
         <template #content>
             <ul class="list-disc">
                 <li><b>snapshotting</b> by default, every max 2 seconds</li>
@@ -240,44 +246,68 @@ Sanfilippo
 </div>
 
 <div class="gap-4">
-    <p class="text-lg pb-4">Redis Data Model</p>
+    <p class="text-lg pb-4" v-click>Redis Data Model</p>
     <div class="grid grid-cols-2 gap-4 pb-4">
         <Card v-click>
-            <template #title><p class="text-green">User Hash</p></template>
+            <template #title>
+                <p class="text-green-400">Key Value</p>
+            </template>
             <template #content>
-                <p>
-                    uid, username and password
+                <p class="m-0">
+                    Just for testing purposes, I have set up a Redis database with a key-value pair.
+                    <br />
+```go
+r.Client.Set(r.Ctx, "foo", "bar", 0)
+r.Client.Set(r.Ctx, "key", "value", 0)
+```
+Which is equivalent to the Redis command:
 ```bash
-INCR next_user_id => 1000
-HMSET user:1000 username antirez password p1pp0
+> SET foo bar
+> SET key value
 ```
                 </p>
             </template>
         </Card>
         <Card v-click>
-            <template #title><p class="text-orange">Users Hash</p></template>
+            <template #title>
+                <p class="text-green-400">Idea Hash</p>
+            </template>
             <template #content>
-                <p>
-                    uid and username
-                    <span class="text-xs font-italic text-gray">remember that we are only able to access data in a direct way, without secondary indexes.</span>
-```bash
-HSET users antirez 1000
+                <p class="m-0">
+                    The idea hash is a hash that contains all the ideas that are shared on the Tommies Idea Board.
+                    <br />
+```go
+// Create a unique key for the idea
+r.Client.Set(r.Ctx, "idea_uid", firstIdea.ID, 0)
+
+// Add the idea to the Redis database
+r.Client.HSet(r.Ctx, key, 
+"timestamp", timestamp, 
+"title", idea.Title, 
+"description", idea.Description, 
+"writer", idea.Writer, 
+"tags", tags)
 ```
                 </p>
             </template>
         </Card>
     </div>
-    <Card v-click>
-        <template #title><p class="text-red">Posts Hash</p></template>
-        <template #content>
-            <p>
-                The idea to share
+</div>
+
+---
+
+Which is equivalent to the Redis command:
+
+<div v-click>
 ```bash
-HMSET post:10343 user_id $owner_id time $time body "This is a great idea!"
+> HSET 
+ idea_uid 1 
+ timestamp 1234567890
+ title "My Idea" 
+ description "This is my idea"
+ writer "Luca Comba" 
+ tags "tag1, tag2"
 ```
-            </p>
-        </template>
-    </Card>
 </div>
 
 ---
@@ -286,17 +316,137 @@ HMSET post:10343 user_id $owner_id time $time body "This is a great idea!"
     <p class="text-2xl">Back End</p>
 </div>
 
+<div class="flex items-center">
+    <p>Created a server with GoLang</p>
+    <img src="https://go.dev/blog/go-brand/Go-Logo/PNG/Go-Logo_Blue.png" alt="Go Logo" class="h-6 ml-2" />
+</div>
+
+Redis Client
+
+```go
+rdb := redis.NewClient(&redis.Options{
+    Addr:     addr,
+    Password: pass,
+    DB:       db,
+})
+
+return &RedisClient{
+    Client: rdb,
+    Ctx:    context.Background(),
+}
+```
+
+---
+
+Server
+
+```go
+func main() {
+	redis := model.NewRedisClient()
+	log.Println("Initializing Redis")
+	redis.Init()
+
+	// Initialize the default ServeMux
+	mux := http.NewServeMux()
+
+	// Define routes
+	mux.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("static"))))
+	mux.HandleFunc("GET /store/{key}", func(w http.ResponseWriter, r *http.Request) {
+		routes.Keyval(w, r, redis)
+	})
+	mux.HandleFunc("GET /idea/{id}", func(w http.ResponseWriter, r *http.Request) {
+		routes.GetIdea(w, r, redis)
+	})
+	
+    ...
+
+	log.Fatal(http.ListenAndServe(":8080", mux))
+}
+```
+
+---
+
+Built with Docker
+```yaml
+version: '3.8'
+
+services:
+  go-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    env_file:
+      - .env
+
+  redis:
+    image: redis:7.0
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--requirepass", ""]
+```
+
+<div class="absolute left-15px bottom-15px text-neutral-300/50 text-sm">
+  <a href="https://github.com/lukfd/tommies-idea">Source Code</a>
+</div>
+
+---
+
+<div class="flex">
+    <p class="text-2xl">Testing the API</p>
+</div>
+
+<br>
+
+Fetching the stored value from Redis
+
+```bash
+$ curl http://localhost:8080/store/foo
+Value from Redis: bar% 
+```
+
+<br>
+
+Fetching the idea from Redis
+
+```bash
+$ curl http://localhost:8080/idea/1
+{"id":1,"timestamp":"1745381047","title":"First Idea","description":"This is my first idea.","writer":"Luca","tags":["idea","redis"]}%
+```
+
+<br>
+
+```bash
+$ curl http://localhost:8080/ideas
+[{"id":1,"timestamp":"1745381047","title":"First Idea","description":"This is my first idea.","writer":"Luca","tags":["idea","redis"]},{"id":2,"timestamp":"1745292170","title":"Second Idea","description":"Another silly description","writer":"Luca","tags":["second","redis"]}]%
+```
+
+
 ---
 
 <div class="flex">
     <p class="text-2xl">Front End</p>
 </div>
 
+<div class="flex text-center">
+    <img src="/frontend.png" class="h-80" />
+</div>
+
+<br>
+
+Available at <a href="https://www.tommies.peeperone.com" class="underline text-blue">https://www.tommies.peeperone.com</a>
+
 ---
 
 # References
 
+<br>
+
 - [https://www.gomomento.com/blog/rip-redis-how-garantia-data-pulled-off-the-biggest-heist-in-open-source-history/](https://www.gomomento.com/blog/rip-redis-how-garantia-data-pulled-off-the-biggest-heist-in-open-source-history/)
 - [https://codersee.com/redis-database-explained/](https://codersee.com/redis-database-explained/)
-- [https://redis.io/about/](https://redis.io/about/)
-- [https://redis.io/docs/latest/get-started/](https://redis.io/docs/latest/get-started/)
+- [https://redis.io/docs/latest/develop/use/patterns/twitter-clone](https://redis.io/docs/latest/develop/use/patterns/twitter-clone)
+- [https://github.com/lukfd/tommies-idea](https://github.com/lukfd/tommies-idea)
