@@ -49,6 +49,45 @@ The API implements the following endpoints:
 - `GET /ideas`: Retrieve all ideas. The response will be a JSON array of ideas.
 - `POST /idea`: Add a new idea. The request json body should contain the new idea.
 
+#### Redis Data Model
+The `/store` endpoint access the Redis key-value store which follows the model
+```go
+r.Client.Set(r.Ctx, "foo", "bar", 0)
+r.Client.Set(r.Ctx, "key", "value", 0)
+```
+
+Which can be demonstrated with
+```bash
+$ curl http://localhost:8080/store/foo
+Value from Redis: bar% 
+```
+
+The `/idea` endpoint access the Redis Hashes which follows the model
+```go
+firstIdea := Idea{
+    ID:          1,
+    Title:       "First Idea",
+    Description: "This is my first idea.",
+    Writer:      "Luca",
+    Tags:        []string{"idea", "redis"},
+}
+r.Client.Set(r.Ctx, "idea_uid", firstIdea.ID, 0)
+r.AddIdea(firstIdea)
+```
+
+The idea can be retrieved with
+```bash
+$ curl http://localhost:8080/idea/1
+{
+    "id":1,
+    "timestamp":"1745381047",
+    "title":"First Idea",
+    "description":"This is my first idea.",
+    "writer":"Luca",
+    "tags":["idea","redis"]
+}%
+```
+
 #### Docker
 The API is containerized using Docker, while Redis provides its own docker image. The Docker Compose file orchestrates the API and Redis containers, allowing for easy deployment and management of the application.
 
