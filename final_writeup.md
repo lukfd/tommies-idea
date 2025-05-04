@@ -7,6 +7,7 @@ Date: 2025-05-04
 ## Quick Links
 - [GitHub repository](https://github.com/lukfd/tommies-idea)
 - [tommies.peeperone.com](https://www.tommies.peeperone.com)
+- [you-tube video presentation](https://youtu.be/2uAR6OMSoQY?si=7dFzEoxf4D4J1Mxo)
 
 ## Introduction
 
